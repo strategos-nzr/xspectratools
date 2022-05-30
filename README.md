@@ -33,4 +33,4 @@ A Set of tools for Dealing with Processing X-ray Spectra from different Beamline
 ### Usage
  Essentially, everything here utilized `pandas` dataframes in order to read the data from various beamline output formats. By default, data not of interest to the current experiment is discarded from the dataframe, but is possible to flag the inclusion. 
 
- 
+ Different beamlines have different instrumentation and thus require different analysis workflows. This is expected, and for the ones I am using, i am trying to expedite such workflows as fast as possible.
