@@ -7,7 +7,7 @@ Created on Fri Jul  8 15:12:59 2022
 
 from distutils.core import setup
 
-setup(name='Distutils',
+setup(name='xspectratools',
       version = '0.0.3',
       description='Read and Process ALS Beamline Data',
       author = "Nick Russo",

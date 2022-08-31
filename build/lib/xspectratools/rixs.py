@@ -6,7 +6,10 @@ from glob import glob
 from scipy.optimize import curve_fit
 from scipy import signal
 
-
+"""
+Yet Another Rixs Analysis Software
+YARAS 
+"""
 def read_summary(file):
     
     """
@@ -45,7 +48,7 @@ def read_rixs(filename):
     image = ccd_data[:,2].reshape(new_shape)
     spectrum = np.sum(image,axis=1)
 
-    return image, spectrum 
+    return ccd_data, image, spectrum 
 
 # 'C:\\Users\\rando\\Documents\\Work\\BlueBronze\\BL4_XAS_RIXS\\CalibrationAttempt1\\CCDScan8558'
 def calibrate_ccd(path):
