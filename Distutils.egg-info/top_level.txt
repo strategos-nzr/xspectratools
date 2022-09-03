@@ -1,7 +1,0 @@
-arpes
-io
-rixs
-sampling
-uncertainty
-xas
-xspectratools

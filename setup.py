@@ -5,10 +5,10 @@ Created on Fri Jul  8 15:12:59 2022
 @author: Nick
 """
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='xspectratools',
-      version = '0.0.3',
+      version = '0.0.5',
       description='Read and Process ALS Beamline Data',
       author = "Nick Russo",
       author_email="nzr111@protonmail.com",
