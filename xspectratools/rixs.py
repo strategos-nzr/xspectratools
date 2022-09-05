@@ -1,6 +1,7 @@
 """
 Creator: Nick Russo
 """
+import re
 import numpy as np
 import pandas as pd
 
@@ -371,25 +372,45 @@ def assemble_rixs_map(folder,
     """ Assemble the map from a bunch of RIXS lines. 
     This is highly parellelizable"""
 
-    image_list= glob((folder+"*2D.txt"))
+    image_list= glob(folder+"*2D.txt")
 
     length=len(image_list)
 
     print(length)
 
+
     star_list= product(image_list,[dark_image*dark_scale]) # has to be in [] to avoid making a product over the numpy array
     print(list(star_list))
     #output_array= np.zeros((2048,length))
-
-    with Pool(4) as p:
-        output= p.starmap(assemble_rixs_line,star_list)
-    print(output)
+    output=[]
+    if __name__ == '__main__':
+        with Pool(4) as p:
+            output.append(p.starmap(assemble_rixs_line,star_list))
+            print(output)
     
     return np.array(output)
 
+def assemble_rixs_map_loop(folder,
+                dark_image,
+                rejection='pych',
+                dark_scale=1,**kwargs):
 
-    
+    """ Assemble the map from a bunch of RIXS lines. 
+    This is highly parellelizable"""
 
+    image_list= glob(folder+"*2D.txt")
+
+    length=len(image_list)
+
+    print(length)
+    output=[]
+
+    for i, file in enumerate(image_list):
+        print("File No: ", i , file)
+        data,line=read_rixs_2D(file)
+        output.append(assemble_rixs_line(data,dark_image,dark_scale=dark_scale))
+
+    return np.array(output)
 
 
 
