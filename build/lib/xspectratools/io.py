@@ -5,7 +5,7 @@ from glob import glob
 
 
 
-def read_bl7(File,col=[0,2,3,4,5,6,7]):
+def read_bl7(File,col=[0,2,3,4,5,6,7],**kwargs):
     skip=14
         
     df = pd.read_csv(File, delimiter = "\t",
@@ -14,9 +14,9 @@ def read_bl7(File,col=[0,2,3,4,5,6,7]):
     return df.iloc[:,col]
     
 
-def read_bl8(File,col=[1,8,9,10,11]):
+def read_bl8(File,col=[1,8,9,10,11],skip=14,**kwargs):
  
-    skip=15
+    
     df = pd.read_csv(File, delimiter = "\t", 
         skiprows= skip,**kwargs)
     

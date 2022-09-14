@@ -220,33 +220,44 @@ def pych_rejection(ccd_image,
     cosmic_ray_map=np.zeros(im_shape)
 
     for i in range(bins):
-            
+        
         box=ccd_image[:,(i*step):step*(i+1)] # this can be parallelized better.
 
         sigma_box= np.std(box)
         median_box = np.median(box)
         box[ box > median_box + sigma_box * sigma_clip]  = median_box
-        # One step of Sigma_Clipping
+        # One step of Sigma_Clipping, very rough rejection of 3sigma + events
+        sigma_box= np.std(box)
+        median_box = np.median(box)
+
 
         #hist= np.histogram(box, bins=200, 
          #   range=(0,median_box + sigma_box*sigma_clip ))
 
         box_hist=np.histogram(box.flatten(),
             bins=100,range=(0,np.max(box.flatten()))); 
-    
-        box_hist_nonzero=np.nonzero(box_hist[0])
+        print(box_hist)
+
+        box_hist_nonzero=np.nonzero(box_hist[0])[0]
+        print("non zero indices:", box_hist_nonzero)
+        #Find the bin edges with non zero counts:
         gaps=np.diff(box_hist[1][box_hist_nonzero])
-
-        gap_idx=np.where(gaps>thresh*sigma_box)
-
+        
+        print("gaps at:", gaps)
+        gap_idx=np.where(gaps>thresh*sigma_box)+1
+        print("gap_}idx at:", gap_idx)
+        
         threshold_point=box_hist[1][box_hist_nonzero][gap_idx]
         
 
         newbox=deepcopy(box)
     
         if len(threshold_point)> 0: 
+            print(i)
+            print("box thresholds: ", threshold_point)
+
             cosmic_mask=np.where(box>np.max(threshold_point))
-            print("Mask for Box: " ,cosmic_mask)
+            #print("Mask for Box: " ,cosmic_mask)
             newbox[cosmic_mask]=median_box
             cosmic_ray_map[:,step*i:step+step*i][cosmic_mask] =1
 
@@ -261,8 +272,8 @@ def pych_rejection(ccd_image,
             
             print("median and std. ",median_box, sigma_box)
             print(box[box > median_box + thresh*sigma_box] )
-            print(gaps)
-            print(gaps>thresh*sigma_box)
+            print("gaps in spectrum",gaps)
+            print("which gaps are bigger than sigma*3",gaps>thresh*sigma_box)
             print(gap_idx[0])
             print("box thresholds: ", threshold_point)
             if len(threshold_point)> 0: 
@@ -408,11 +419,73 @@ def assemble_rixs_map_loop(folder,
     for i, file in enumerate(image_list):
         print("File No: ", i , file)
         data,line=read_rixs_2D(file)
-        output.append(assemble_rixs_line(data,dark_image,dark_scale=dark_scale))
+        output.append(assemble_rixs_line(data,dark_image,dark_scale=dark_scale,**kwargs))
 
     return np.array(output)
 
 
+def quick_rixs_map(XASFILE, 
+                      Folder,
+                      ax=None,
+                      levels=100,
+                      offset= 00,
+                      estart=0,
+                      slope=1,
+                      cmap="summer",
+                      **kwargs):
+    
+    """ Assemble a RIXS Map from a collection of Files from Beamline 8
+    This assumes that:
 
+    Cosmic rays have been subtracted and 
+    Dark background has been subtracted.
+    Very fast plotting of multiple emission lines
 
+    1. Grab the spectra files
+    2. Assemble the Files into a data array
+    3. Collect Ranges of Energies
+    4. Renormalize Emission Yields by IO
+    Collect Max Value from Map
+    
+    """
+    
+    FileList=glob(Folder+"*1D.txt")
+    #print(FileList)
+    L=len(FileList)
+    print(L)
+    
+    num_rows=np.shape(np.array(pd.read_csv(FileList[1],delimiter="\t", skiprows=9))[:,1])[0]
+    
+    data=np.zeros((L,2048))
+    
+    for i,File in enumerate(FileList):
+        x=np.array(pd.read_csv(File,delimiter="\t", skiprows=9))[:,1]
+        data[i,:]=x[:]
+    
+    
+    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=12)
+    for i in range(len(XASdata.iloc[:,3])):
+        data[i,:]=data[i,:]/XASdata.iloc[i,3]
+    print("Renormalized Yield by IO")               
+    Energies=np.array(XASdata.iloc[:,2])
+    
+    pixel=np.linspace(1,2048,2048)
+    
+    emission_energies= slope*(pixel-offset)+estart
+    x_axis=emission_energies
+    y_axis=Energies
+
+    pp.contourf(x_axis,y_axis,data,levels,cmap=cmap,**kwargs)
+
+    pp.colorbar()
+    
+    pp.ylabel("Excitation Energy (eV)")
+    pp.xlabel("Emission Energy (eV)")
+    pp.tight_layout()
+
+    
+    #pp.savefig("OK_Edge_RIXS.svg")
+    #pp.savefig("OK_Edge_RIXS.png")
+
+    return Energies,pixel,data;
 
