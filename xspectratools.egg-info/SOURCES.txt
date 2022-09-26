@@ -4,8 +4,8 @@ xspectratools/__init__.py
 xspectratools/arpes.py
 xspectratools/io.py
 xspectratools/rixs.py
-xspectratools/sampling.py
 xspectratools/testRixs.py
+xspectratools/troxas.py
 xspectratools/uncertainty.py
 xspectratools/xas.py
 xspectratools.egg-info/PKG-INFO

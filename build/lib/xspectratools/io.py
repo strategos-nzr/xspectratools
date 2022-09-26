@@ -8,7 +8,7 @@ from glob import glob
 def read_bl7(File,col=[0,2,3,4,5,6,7],**kwargs):
     skip=14
         
-    df = pd.read_csv(File, delimiter = "\t",
+    df = pd.read_csv(File, delimiter = "\t",engine="python" ,
         skiprows= skip,**kwargs)
     
     return df.iloc[:,col]
@@ -17,7 +17,7 @@ def read_bl7(File,col=[0,2,3,4,5,6,7],**kwargs):
 def read_bl8(File,col=[1,8,9,10,11],skip=14,**kwargs):
  
     
-    df = pd.read_csv(File, delimiter = "\t", 
+    df = pd.read_csv(File, delimiter = "\t",engine="python" ,
         skiprows= skip,**kwargs)
     
     return df.iloc[:,col]
@@ -34,7 +34,7 @@ beamlines_dict = {
     
      }
 
-def read_xas(FILENAME, format = "BL8"):
+def read_xas(FILENAME, format = "BL8",**kwargs):
     """
     read XAS data file from certain beamlines. 
     Specifiying the format for the given beamline, default is 
@@ -55,7 +55,7 @@ def read_xas(FILENAME, format = "BL8"):
 
     func= beamlines_dict.get(format)
 
-    return func(FILENAME)
+    return func(FILENAME,**kwargs)
 
 def batch_read(NameStem,format="BL7",**kwargs):
 
