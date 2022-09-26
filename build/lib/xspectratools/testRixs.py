@@ -48,7 +48,7 @@ for i,file in enumerate(flist):
     
     for i in range(num_bad_px):
                 
-        rixs[flagged_pixels[i,0] ,flagged_pixels[i,1] ] = 
+        rixs[flagged_pixels[i,0] ,flagged_pixels[i,1] ] = 0
         
 pp.ylim(0,10)
 

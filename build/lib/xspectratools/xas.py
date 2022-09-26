@@ -18,6 +18,8 @@ def resample_xas():
     to be acquired with
     
     """
+    pass 
+
 def batch_average():
 
     pass

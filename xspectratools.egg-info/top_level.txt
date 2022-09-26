@@ -1,4 +1,5 @@
 arpes
+diffraction
 io
 rixs
 sampling

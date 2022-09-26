@@ -3,14 +3,18 @@ import matplotlib.pyplot as pp
 
 #https://xrayutilities.sourceforge.io/simulations.html
 # Maybe Commit to this?
+"""
+Cell Params
 
+a,b,c,alpha,beta,gamma
+
+"""
+#Dummy Example
+CellParams=[5,5,5,90,90,90]
+
+# Defining Fit Functions for Peaks:
 
 def GrabDataFromRange(DATA,Theta1,Theta2):
-    """ 
-    Splice an arbitrary powder or 1-D pattern and return the data from a specific range.
-    Useful for fitting. 
-    """
-
     pass
 
 
@@ -18,7 +22,7 @@ def GrabData(Filename,delimiter=" ",**kwargs):
     """ Use Numpy loadtxt to read the csv file,
     returns numpy array for quick plotting"""
 
-    return np.loadtxt(Filename,delimiter=delimiter,skiprows=1,**kwargs)
+    return np.loadtxt(Filename,delimiter=delimiter,**kwargs)
 
 
 def ImportCif(FileName,**kwargs):

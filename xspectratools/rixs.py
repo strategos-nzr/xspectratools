@@ -86,91 +86,152 @@ def read_rixs_2D(filename):
 
 
 
-# 'C:\\Users\\rando\\Documents\\Work\\BlueBronze\\BL4_XAS_RIXS\\CalibrationAttempt1\\CCDScan8558'
-def calibrate_ccd(path):
-    """   
-    DEPRECATED
-    Ideal: Function that returns emission energy as a 
-    function of location for a given spectrometer angle: 
-    Emission Energy = f(Theta,Pix)
-    Theta = ~ spectrometer energy
-    
-    Heres the Idea:
-        
-    For a given 'spectrometer energy' there is going to be a few energies for 
-    excitation.
-    
-    
-    The Spectrometer energy and file name are in the main file.
-    We need to take that data, read in the CCD frame, and then integrate along the width
-    to get a function that is "roughly" a spectrum for a given image,
-    and use the elastic peak placement to get thee energy calibration
-    for a given spectrometer energy and frame.
-    """
-    
-    print("Using this path:  ",path)
-    summary_file=glob(path+"*.txt")[0]
-    
-    print("Frame- Excitation File: ", summary_file)
-        
-    try:
-        data_summary=read_summary(summary_file)
-    
-    except: 
-        print("No")
-        pass
-    finally:
-        print("OK")
-        pass 
-    print("Obtained File List: ",data_summary.Filename )
-    filelist=list(data_summary.Filename)
-    # Calibration=glob(path)
-    
-   
-    calibration_data= np.zeros((len(data_summary.Filename), 5 )) 
-   
-    calibration_data[:,:3] = np.array(data_summary.iloc[:,:3])
-   
-   
-   
-    for i, file in enumerate(filelist):
-     
-        
-        try:
-            rixs , spectrum = read_rixs(file) 
-        except:
-            print("Bad File Format/ Nothing to read here.")
-            continue
-        finally:
-            print(f"Read File: {file} number {i}")
-        
-        pp.plot(spectrum, label= f"{i} / Exc = {data_summary.iloc[i,1]}")
-        
-        elastic_idx = np.argmax(spectrum)
-        
-        calibration_data[i,3] = elastic_idx
-        
-        print(f"Frame {i} with Ex= {calibration_data[i,1]} and SE={calibration_data[i,2]}")
-    
-    print("AcquistionComplete")
-    
-    
-    print("Begining Energy Calibration")
-    
-    ex_spec_diff = calibration_data[:,1]-calibration_data[:,2]
-    
-    params,cov= curve_fit(line,
-                          ex_spec_diff,
-                          calibration_data[:,3],
-                          p0=(300,500))
-    
-    
-    return calibration_data, params, cov
-
-
 def line(x,a=1,b=0):
 
     return a*x + b
+
+
+
+def assemble_rixs_line(ccd_image,
+                dark_image,
+                rejection='pych',
+                dark_scale=1,**kwargs):
+
+    """
+    Assemble the Line data profile from:
+    1. the dark image
+    2. the CCD image
+    3. the rejection scheme of choice: Default is 'pych'
+    Other's not yet implemented.
+
+    The dark image should be rescaled to have
+     the same integration time as the image 
+    """
+    # Subtract the Background
+    adjusted_image= ccd_image-dark_image/dark_scale
+
+    # Ensure there are no negative counts:
+    adjusted_image[adjusted_image < 0 ] =0
+
+    # Do the rejection Scheme
+    new_image, cosmic_rays= pych_rejection(adjusted_image,**kwargs)
+
+    #Compute the Emission spectrum
+    rixs_line = np.sum(new_image,axis=0)
+
+    cosmic_line=np.sum(cosmic_rays)
+
+    return rixs_line, cosmic_line
+
+
+def assemble_rixs_map(folder, 
+                dark_image,
+                rejection='pych',
+                dark_scale=1,**kwargs):
+
+    """ Assemble the map from a bunch of RIXS lines. 
+    This is highly parellelizable"""
+
+    image_list= glob(folder+"*2D.txt")
+
+    length=len(image_list)
+
+    print(length)
+
+
+    star_list= product(image_list,[dark_image*dark_scale]) # has to be in [] to avoid making a product over the numpy array
+    print(list(star_list))
+    #output_array= np.zeros((2048,length))
+    output=[]
+    if __name__ == '__main__':
+        with Pool(4) as p:
+            output.append(p.starmap(assemble_rixs_line,star_list))
+            print(output)
+    
+    return np.array(output)
+
+def assemble_rixs_map_loop(folder,
+                dark_image,
+                rejection='pych',
+                dark_scale=1,**kwargs):
+
+    """ Assemble the map from a bunch of RIXS lines. 
+    This is highly parellelizable"""
+
+    image_list= glob(folder+"*2D.txt")
+
+    length=len(image_list)
+
+    print(length)
+    output=[]
+
+    for i, file in enumerate(image_list):
+        print("File No: ", i , file)
+        data,line=read_rixs_2D(file)
+        output.append(assemble_rixs_line(data,dark_image,dark_scale=dark_scale,**kwargs))
+
+    return np.array(output)
+
+
+def quick_rixs_map(XASFILE, 
+                      Folder,
+                      ax=None,
+                      levels=100,
+                      offset= 00,
+                      estart=0,
+                      slope=1,
+                      **kwargs):
+    
+    """ Assemble a RIXS Map from a collection of Files from Beamline 8
+    This assumes that:
+
+    Cosmic rays have been subtracted and 
+    Dark background has been subtracted.
+    Very fast plotting of multiple emission lines
+
+    1. Grab the spectra files
+    2. Assemble the Files into a data array
+    3. Collect Ranges of Energies
+    4. Renormalize Emission Yields by IO
+    Collect Max Value from Map
+    
+    """
+    
+    FileList=glob(Folder+"*1D.txt")
+    #print(FileList)
+    L=len(FileList)
+    print(L)
+    
+    num_rows=np.shape(np.array(pd.read_csv(FileList[1],delimiter="\t", skiprows=9))[:,1])[0]
+    
+    data=np.zeros((L,2048))
+    
+    for i,File in enumerate(FileList):
+        x=np.array(pd.read_csv(File,delimiter="\t", skiprows=9))[:,1]
+        data[i,:]=x[:]
+    
+    
+    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=12)
+    for i in range(len(XASdata.iloc[:,3])):
+        data[i,:]=data[i,:]/XASdata.iloc[i,3]
+    print("Renormalized Yield by IO")               
+    Energies=np.array(XASdata.iloc[:,2])
+    
+    pixel=np.linspace(1,2048,2048)
+    
+    emission_energies= slope*(pixel-offset)+estart
+    x_axis=emission_energies
+    y_axis=Energies
+
+    pp.contourf(x_axis,y_axis,data,levels,**kwargs)
+
+    pp.colorbar()
+    
+    pp.ylabel("Excitation Energy (eV)")
+    pp.xlabel("Emission Energy (eV)")
+    pp.tight_layout()
+
+    return Energies,pixel,data;
 
 
 
@@ -341,151 +402,3 @@ def laplacian_reject(ccd_image):
     
     
     pass
-
-
-def assemble_rixs_line(ccd_image,
-                dark_image,
-                rejection='pych',
-                dark_scale=1,**kwargs):
-
-    """
-    Assemble the Line data profile from:
-    1. the dark image
-    2. the CCD image
-    3. the rejection scheme of choice: Default is 'pych'
-    Other's not yet implemented.
-
-    The dark image should be rescaled to have
-     the same integration time as the image 
-    """
-    # Subtract the Background
-    adjusted_image= ccd_image-dark_image/dark_scale
-
-    # Ensure there are no negative counts:
-    adjusted_image[adjusted_image < 0 ] =0
-
-    # Do the rejection Scheme
-    new_image, cosmic_rays= pych_rejection(adjusted_image,**kwargs)
-
-    #Compute the Emission spectrum
-    rixs_line = np.sum(new_image,axis=0)
-
-    cosmic_line=np.sum(cosmic_rays)
-
-    return rixs_line, cosmic_line
-
-
-def assemble_rixs_map(folder, 
-                dark_image,
-                rejection='pych',
-                dark_scale=1,**kwargs):
-
-    """ Assemble the map from a bunch of RIXS lines. 
-    This is highly parellelizable"""
-
-    image_list= glob(folder+"*2D.txt")
-
-    length=len(image_list)
-
-    print(length)
-
-
-    star_list= product(image_list,[dark_image*dark_scale]) # has to be in [] to avoid making a product over the numpy array
-    print(list(star_list))
-    #output_array= np.zeros((2048,length))
-    output=[]
-    if __name__ == '__main__':
-        with Pool(4) as p:
-            output.append(p.starmap(assemble_rixs_line,star_list))
-            print(output)
-    
-    return np.array(output)
-
-def assemble_rixs_map_loop(folder,
-                dark_image,
-                rejection='pych',
-                dark_scale=1,**kwargs):
-
-    """ Assemble the map from a bunch of RIXS lines. 
-    This is highly parellelizable"""
-
-    image_list= glob(folder+"*2D.txt")
-
-    length=len(image_list)
-
-    print(length)
-    output=[]
-
-    for i, file in enumerate(image_list):
-        print("File No: ", i , file)
-        data,line=read_rixs_2D(file)
-        output.append(assemble_rixs_line(data,dark_image,dark_scale=dark_scale,**kwargs))
-
-    return np.array(output)
-
-
-def quick_rixs_map(XASFILE, 
-                      Folder,
-                      ax=None,
-                      levels=100,
-                      offset= 00,
-                      estart=0,
-                      slope=1,
-                      cmap="summer",
-                      **kwargs):
-    
-    """ Assemble a RIXS Map from a collection of Files from Beamline 8
-    This assumes that:
-
-    Cosmic rays have been subtracted and 
-    Dark background has been subtracted.
-    Very fast plotting of multiple emission lines
-
-    1. Grab the spectra files
-    2. Assemble the Files into a data array
-    3. Collect Ranges of Energies
-    4. Renormalize Emission Yields by IO
-    Collect Max Value from Map
-    
-    """
-    
-    FileList=glob(Folder+"*1D.txt")
-    #print(FileList)
-    L=len(FileList)
-    print(L)
-    
-    num_rows=np.shape(np.array(pd.read_csv(FileList[1],delimiter="\t", skiprows=9))[:,1])[0]
-    
-    data=np.zeros((L,2048))
-    
-    for i,File in enumerate(FileList):
-        x=np.array(pd.read_csv(File,delimiter="\t", skiprows=9))[:,1]
-        data[i,:]=x[:]
-    
-    
-    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=12)
-    for i in range(len(XASdata.iloc[:,3])):
-        data[i,:]=data[i,:]/XASdata.iloc[i,3]
-    print("Renormalized Yield by IO")               
-    Energies=np.array(XASdata.iloc[:,2])
-    
-    pixel=np.linspace(1,2048,2048)
-    
-    emission_energies= slope*(pixel-offset)+estart
-    x_axis=emission_energies
-    y_axis=Energies
-
-    pp.contourf(x_axis,y_axis,data,levels,cmap=cmap,**kwargs)
-
-    pp.colorbar()
-    
-    pp.ylabel("Excitation Energy (eV)")
-    pp.xlabel("Emission Energy (eV)")
-    pp.tight_layout()
-
-    
-    #pp.savefig("OK_Edge_RIXS.svg")
-    #pp.savefig("OK_Edge_RIXS.png")
-
-    return Energies,pixel,data;
-
