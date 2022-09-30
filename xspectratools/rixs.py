@@ -46,7 +46,7 @@ def read_summary(file):
     data = pd.read_csv(file,sep="\t", engine="python",skiprows=12)
     return data
 
-def read_rixs_1D(filename):
+def read_rixs_1D(file):
     """ Read 1D data file. Is easier to quickly analyze then the 2D dataset, 
     with the admission it is harder to get a good cosmic ray discrimination
     """
@@ -211,7 +211,7 @@ def quick_rixs_map(XASFILE,
         data[i,:]=x[:]
     
     
-    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=12)
+    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=14)
     for i in range(len(XASdata.iloc[:,3])):
         data[i,:]=data[i,:]/XASdata.iloc[i,3]
     print("Renormalized Yield by IO")               
@@ -377,6 +377,8 @@ def laplacian_reject(ccd_image):
     
     then negative values are to be removed.
     
+
+    Implementation Paper
     
     """
     
@@ -397,7 +399,7 @@ def laplacian_reject(ccd_image):
     image_interp[::2,::2]=ccd_image
     
     #do the convolution, filter out the negative points
-    x = signal.convolve2d(image_interpp,LAPLACIAN) 
+    x = signal.convolve2d(image_interp,LAPLACIAN) 
     x[x<0]=0
     
     

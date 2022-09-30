@@ -23,3 +23,7 @@ def readme():
     print(declaration)
     pass
 
+def fgen_connect():
+
+
+    pass

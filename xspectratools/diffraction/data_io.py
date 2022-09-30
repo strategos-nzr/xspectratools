@@ -32,7 +32,7 @@ def QuickXRDplot(data,scale=1,offset=0,Normalize = False,**kwargs):
     """
     N=1
     if Normalize == True:
-        N= sp.trapz(data[:,1])
+        N= np.trapz(data[:,1])
 
     pp.plot(data[:,0],offset+scale*data[:,1]/N,**kwargs)
    
