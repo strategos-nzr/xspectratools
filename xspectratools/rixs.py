@@ -36,14 +36,15 @@ The Work Flow should be as follows:
 """
 
 
-def read_summary(file):
+
+def read_summary(file,skip=12):
     
     """
     Read in a summary data spectrum
     and save it as a pd array. Usually in the top level folder above the "Andor" folder
     
     """
-    data = pd.read_csv(file,sep="\t", engine="python",skiprows=12)
+    data = pd.read_csv(file,sep="\t", engine="python",skiprows=skip)
     return data
 
 def read_rixs_1D(file):
@@ -168,18 +169,22 @@ def assemble_rixs_map_loop(folder,
     for i, file in enumerate(image_list):
         print("File No: ", i , file)
         data,line=read_rixs_2D(file)
-        output.append(assemble_rixs_line(data,dark_image,dark_scale=dark_scale,**kwargs))
+        filtered_data = assemble_rixs_line(data,dark_image,
+                                           dark_scale=dark_scale,
+                                           **kwargs)[0]
+        output.append(filtered_data)
+
 
     return np.array(output)
 
 
-def quick_rixs_map(XASFILE, 
-                      Folder,
+def quick_rixs_map(Folder,
                       ax=None,
                       levels=100,
                       offset= 00,
                       estart=0,
                       slope=1,
+                      skip=14,
                       **kwargs):
     
     """ Assemble a RIXS Map from a collection of Files from Beamline 8
@@ -196,11 +201,14 @@ def quick_rixs_map(XASFILE,
     Collect Max Value from Map
     
     """
-    
-    FileList=glob(Folder+"*1D.txt")
-    #print(FileList)
+    Experiment_Summary_File=glob(Folder+"*AI.txt")[0]
+    XASdata = read_summary(Experiment_Summary_File,skip)
+
+    FileList=glob(Folder+"/Andor/*1D.txt")
+    print(FileList)
+
     L=len(FileList)
-    print(L)
+    print("Number of Files to Process:  ",L)
     
     num_rows=np.shape(np.array(pd.read_csv(FileList[1],delimiter="\t", skiprows=9))[:,1])[0]
     
@@ -211,10 +219,11 @@ def quick_rixs_map(XASFILE,
         data[i,:]=x[:]
     
     
-    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=14)
+    
     for i in range(len(XASdata.iloc[:,3])):
         data[i,:]=data[i,:]/XASdata.iloc[i,3]
-    print("Renormalized Yield by IO")               
+    print("Renormalized Yield by IO")    
+               
     Energies=np.array(XASdata.iloc[:,2])
     
     pixel=np.linspace(1,2048,2048)
@@ -305,9 +314,12 @@ def pych_rejection(ccd_image,
         gaps=np.diff(box_hist[1][box_hist_nonzero])
         
         print("gaps at:", gaps)
-        gap_idx=np.where(gaps>thresh*sigma_box)+1
-        print("gap_}idx at:", gap_idx)
         
+
+        gap_idx=np.argwhere(gaps>thresh*sigma_box)+1
+
+        print("gap_idx at:", gap_idx)
+    
         threshold_point=box_hist[1][box_hist_nonzero][gap_idx]
         
 
@@ -335,7 +347,7 @@ def pych_rejection(ccd_image,
             print(box[box > median_box + thresh*sigma_box] )
             print("gaps in spectrum",gaps)
             print("which gaps are bigger than sigma*3",gaps>thresh*sigma_box)
-            print(gap_idx[0])
+            print(gap_idx)
             print("box thresholds: ", threshold_point)
             if len(threshold_point)> 0: 
                 print("Mask for Box: " ,cosmic_mask)

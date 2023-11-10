@@ -180,6 +180,7 @@ def quick_rixs_map(XASFILE,
                       offset= 00,
                       estart=0,
                       slope=1,
+                      skip=14,
                       **kwargs):
     
     """ Assemble a RIXS Map from a collection of Files from Beamline 8
@@ -211,7 +212,7 @@ def quick_rixs_map(XASFILE,
         data[i,:]=x[:]
     
     
-    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=14)
+    XASdata=pd.read_csv(XASFILE,delimiter="\t",skiprows=skip)
     for i in range(len(XASdata.iloc[:,3])):
         data[i,:]=data[i,:]/XASdata.iloc[i,3]
     print("Renormalized Yield by IO")               

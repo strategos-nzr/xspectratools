@@ -4,7 +4,7 @@ xspectratools/__init__.py
 xspectratools/arpes.py
 xspectratools/io.py
 xspectratools/rixs.py
-xspectratools/testRixs.py
+xspectratools/statfilters.py
 xspectratools/troxas.py
 xspectratools/uncertainty.py
 xspectratools/xas.py
@@ -13,6 +13,3 @@ xspectratools.egg-info/SOURCES.txt
 xspectratools.egg-info/dependency_links.txt
 xspectratools.egg-info/requires.txt
 xspectratools.egg-info/top_level.txt
-xspectratools/diffraction/__init__.py
-xspectratools/diffraction/data_io.py
-xspectratools/diffraction/diffractanal.py
