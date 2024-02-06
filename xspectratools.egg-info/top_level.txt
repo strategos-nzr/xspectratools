@@ -1,8 +1,0 @@
-arpes
-diffraction
-io
-rixs
-sampling
-uncertainty
-xas
-xspectratools
